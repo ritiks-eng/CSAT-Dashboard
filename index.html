@@ -75,6 +75,7 @@
     .theme-toggle:hover { background:var(--ring); color: var(--text); }
     .kpi{display:grid;gap:4px; text-align: center;}.kpi .label{color:var(--muted);font-size:12px;font-weight:500;}.kpi .value{font-size:40px;font-weight:700;letter-spacing:-.02em;transition: color 0.3s ease;}.kpi .sub{color:var(--muted);font-size:12px}
     .chart{height:320px}.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--ring)} table{border-collapse:collapse;width:100%;background:var(--card-bg);transition: background-color 0.3s ease;}
+    .table-wrap-scrolling { max-height: 220px; }
     th,td{padding:10px 12px;border-bottom:1px solid var(--ring);font-size:13px;transition: border-color 0.3s ease, background-color 0.3s ease;} th{text-align:left;color:var(--muted);font-weight:600;background:rgba(0,0,0,0.02);position:sticky;top:0;font-size:12px;letter-spacing:.01em;text-transform:uppercase;}
     body.dark-mode th { background: rgba(255,255,255,0.05); }
     tr.row-flagged td { background: rgba(255, 69, 58, 0.05); }
@@ -197,7 +198,7 @@
         <div class="card"><div class="label muted" style="margin-bottom:6px;">Rating Distribution</div><div class="chart" id="distChart"></div></div>
       </div>
 
-       <div class="grid grid-2" style="margin-top:16px;">
+      <div class="grid grid-2" style="margin-top:16px;">
           <div class="card">
             <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Source</h2>
             <div id="source-table-container" class="table-wrap">
@@ -206,7 +207,7 @@
           </div>
           <div class="card">
             <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Agent</h2>
-            <div id="agent-table-container" class="table-wrap">
+            <div id="agent-table-container" class="table-wrap table-wrap-scrolling">
                 <!-- Table will be injected here -->
             </div>
           </div>
