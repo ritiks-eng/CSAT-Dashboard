@@ -1,0 +1,723 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CSAT Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Google Charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <style>
+    :root {
+        /* Graphite Light Theme */
+        --bg: #f5f5f7;
+        --card-bg: rgba(255, 255, 255, 0.7);
+        --text: #1d1d1f;
+        --text-muted: #6e6e73;
+        --ring: rgba(0, 0, 0, 0.08);
+        --accent: #0071e3;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        --radius: 18px;
+        --header-bg: rgba(255, 255, 255, 0.6);
+        --chart-grid: rgba(0,0,0,0.07);
+        --chart-text: #555;
+        --skeleton-bg: rgba(0,0,0,0.06);
+        --shimmer-bg: linear-gradient(90deg, transparent, rgba(0,0,0,0.04), transparent);
+    }
+
+    body.dark-mode {
+        /* Midnight Dark Theme */
+        --bg: #111;
+        --card-bg: rgba(29, 29, 31, 0.7);
+        --text: #f5f5f7;
+        --text-muted: #86868b;
+        --ring: rgba(255, 255, 255, 0.12);
+        --accent: #0a84ff;
+        --shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        --header-bg: rgba(29, 29, 31, 0.6);
+        --chart-grid: rgba(255,255,255,0.1);
+        --chart-text: #999;
+        --skeleton-bg: rgba(255,255,255,0.06);
+        --shimmer-bg: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    }
+    *{box-sizing:border-box}
+    .hidden { display: none !important; }
+    body{margin:0;font-family:'Inter', -apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale; transition: background-color 0.3s ease, color 0.3s ease;}
+    header{position:sticky;top:0;z-index:10;backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);background:var(--header-bg);border-bottom:1px solid var(--ring);transition: background-color 0.3s ease, border-color 0.3s ease;}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px 20px}
+    .header-content{display:flex;justify-content:space-between;align-items:center;}
+    .title{display:flex;gap:16px;align-items:center}
+    .title i { font-size: 24px; color: var(--text-muted); }
+    h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.025em}
+    .subtitle{color:var(--muted);font-size:14px;font-weight:500;}
+    .header-meta { display: flex; align-items: center; gap: 20px; }
+    .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .live-indicator i { font-size: 14px; }
+    .live-dot { width: 8px; height: 8px; background-color: #34c759; border-radius: 50%; animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); }
+    @keyframes pulse { 50% { opacity: 0.3; } }
+    .header-date { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    @media (max-width: 820px) { .header-date { display: none; } }
+    @media (max-width: 768px) { .subtitle { display: none; } h1 { font-size: 20px; } }
+    .grid{display:grid;gap:16px}@media(min-width:768px){.grid-2{grid-template-columns:1fr 1fr}}@media(min-width:1024px){.grid-3{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px; transition: all 0.3s ease;}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.control{display:grid;gap:6px;min-width:180px}
+    label{font-size:12px;color:var(--muted);font-weight:500;} input,select,button{appearance:none;background:var(--card-bg);border:1px solid var(--ring);border-radius:12px;padding:10px 12px;font:inherit;font-weight:500;color:var(--text);transition: all 0.2s ease;}
+    input:focus,select:focus{box-shadow:0 0 0 4px rgba(0,113,227,.15);border-color:var(--accent)}
+    button{cursor:pointer}
+    button.primary{background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:12px;font-weight:600;}
+    button.primary:hover{opacity:0.85;}
+    .theme-toggle { background:transparent; border:none; color: var(--text-muted); font-size:18px; padding:8px; border-radius:99px; width:40px; height:40px; display:flex; align-items:center; justify-content:center;}
+    .theme-toggle:hover { background:var(--ring); color: var(--text); }
+    .kpi{display:grid;gap:4px; text-align: center;}.kpi .label{color:var(--muted);font-size:12px;font-weight:500;}.kpi .value{font-size:40px;font-weight:700;letter-spacing:-.02em;transition: color 0.3s ease;}.kpi .sub{color:var(--muted);font-size:12px}
+    .chart{height:320px}.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--ring)} table{border-collapse:collapse;width:100%;background:var(--card-bg);transition: background-color 0.3s ease;}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--ring);font-size:13px;transition: border-color 0.3s ease, background-color 0.3s ease;} th{text-align:left;color:var(--muted);font-weight:600;background:rgba(0,0,0,0.02);position:sticky;top:0;font-size:12px;letter-spacing:.01em;text-transform:uppercase;}
+    body.dark-mode th { background: rgba(255,255,255,0.05); }
+    tr.row-flagged td { background: rgba(255, 69, 58, 0.05); }
+    body.dark-mode tr.row-flagged td { background: rgba(255, 69, 58, 0.1); }
+    .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef5ff;color:#0b5bd3;border:1px solid #d8e7ff}
+    body.dark-mode .badge { background: rgba(10, 132, 255, 0.15); color: #0a84ff; border: 1px solid rgba(10, 132, 255, 0.3); }
+    .muted{color:var(--muted)}.sep{height:1px;background:var(--ring);margin:16px 0;transition: background-color 0.3s ease;}.pager{display:flex;gap:8px;align-items:center}
+    .error-banner{background:#fff2f2;border:1px solid #ffcccc;color:#d8000c;padding:12px;border-radius:12px;margin-bottom:16px;font-size:14px;}
+    .error-banner ul{margin:8px 0 0 20px;padding:0;}
+    .error-banner ol { list-style-type: decimal; margin: 8px 0 0 20px; padding: 0;}
+    .error-banner li { margin-bottom: 4px; }
+    .error-banner code { background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+    body.dark-mode .error-banner { background: rgba(255, 69, 58, 0.15); border-color: rgba(255, 69, 58, 0.3); color: #ff453a; }
+    body.dark-mode .error-banner code { background: rgba(255,255,255,0.1); }
+    .loader{position:fixed;top:16px;right:16px;width:18px;height:18px;border:2px solid var(--muted);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;opacity:0;transition:opacity .3s;z-index:20}
+    .loader.visible{opacity:1}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Skeleton Loader */
+    .skeleton { background: var(--skeleton-bg); border-radius: var(--radius); position: relative; overflow: hidden; }
+    .skeleton::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--shimmer-bg); animation: shimmer 1.5s infinite; transform: translateX(-100%);
+    }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+    /* Toast Notification */
+    .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--card-bg); color: var(--text);
+        padding: 12px 20px; border-radius: 999px; box-shadow: var(--shadow); z-index: 100; font-size: 14px; font-weight: 500;
+        border: 1px solid var(--ring); backdrop-filter: blur(20px); transition: bottom 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .toast.show { bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div id="loader" class="loader"></div>
+  <header>
+    <div class="wrap">
+      <div class="header-content">
+          <div class="title">
+            <i class="fa-solid fa-face-smile"></i>
+            <div>
+                <h1>CSAT Dashboard</h1>
+                <span class="subtitle">Customer Satisfaction Overview</span>
+            </div>
+          </div>
+          <div class="header-meta">
+              <div class="live-indicator">
+                  <div class="live-dot"></div>
+                  <span>Live</span>
+              </div>
+              <div id="header-date" class="header-date"></div>
+              <button class="theme-toggle" id="themeToggleBtn" title="Toggle Theme">
+                <i class="fa-solid fa-sun"></i>
+              </button>
+          </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:20px;">
+    <div id="errorContainer"></div>
+
+    <div id="skeleton-loader">
+        <div class="card skeleton" style="height: 101px;"></div>
+        <div class="grid grid-3" style="margin-top:16px;">
+            <div class="card skeleton" style="height: 102px;"></div>
+            <div class="card skeleton" style="height: 102px;"></div>
+            <div class="card skeleton" style="height: 102px;"></div>
+        </div>
+        <div class="grid grid-2" style="margin-top:16px;">
+            <div class="card skeleton" style="height: 360px;"></div>
+            <div class="card skeleton" style="height: 360px;"></div>
+        </div>
+        <div class="card skeleton" style="margin-top:16px; height: 400px;"></div>
+    </div>
+
+    <div id="dashboard-content" class="hidden">
+      <div class="card">
+        <div class="controls">
+          <div class="control">
+            <label>Time Range</label>
+            <select id="timeFilter">
+              <option value="all">All time</option>
+              <option value="this-week">This Week</option>
+              <option value="last-week">Last Week</option>
+              <option value="this-month">This Month</option>
+              <option value="last-month">Last Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          <div class="control"><label>From</label><input type="date" id="dateFrom"></div>
+          <div class="control"><label>To</label><input type="date" id="dateTo"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:16px;">
+        <div class="card kpi">
+            <div class="label">Overall CSAT Score</div>
+            <div class="value" id="avg-csat">—</div>
+            <div class="sub" id="csat-scale"></div>
+        </div>
+        <div class="card kpi">
+            <div class="label">Total Responses</div>
+            <div class="value" id="total-responses">—</div>
+            <div class="sub">&nbsp;</div>
+        </div>
+        <div class="card kpi">
+            <div class="label">Satisfaction Rate</div>
+            <div class="value" id="satisfaction-rate">—</div>
+            <div class="sub" id="satisfied-count"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px;">
+        <div class="card"><div class="label muted" style="margin-bottom:6px;">CSAT Score Trend (Daily Avg)</div><div class="chart" id="trendChart"></div></div>
+        <div class="card"><div class="label muted" style="margin-bottom:6px;">Rating Distribution</div><div class="chart" id="distChart"></div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div style="display:flex; flex-wrap: wrap; justify-content:space-between; align-items:center; gap: 12px;">
+          <div class="label muted">Feedbacks</div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-left: auto;">
+            <div class="control" style="min-width: 240px;">
+              <input type="search" id="searchInput" placeholder="Search feedbacks...">
+            </div>
+            <div class="pager">
+              <span class="badge" id="rowCount">0</span>
+              <button id="prevBtn">Prev</button>
+              <span id="pageInfo" class="muted">–</span>
+              <button id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="table-wrap">
+          <table id="dataTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div id="noResults" style="display:none; text-align:center; padding: 40px; color: var(--muted);">No results found for the selected filters.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <div id="toast-notification" class="toast">Dashboard has been updated with the latest data.</div>
+
+  <script>
+    // ==== CONFIG ====
+    const API_URL = "https://script.google.com/macros/s/AKfycby-y3tvAcrBlYvyg0gj4heVGj-_YgnrGMwfxuWmWNGK0hm2XZJWeu6VFVayV4aPiE2pvA/exec";
+    const CACHE_DURATION_MINUTES = 15;
+    
+    // --- Column Mapping (adjust if your sheet structure is different) ---
+    const TIMESTAMP_COL = 4; // Column E
+    const RATING_COL = 3;    // Column D
+    const SOURCE_COL = 5;    // Column F
+    const RATING_MAX = 5; // Assuming a 1-5 scale. Change if needed.
+    const SATISFIED_THRESHOLD = 4; // Ratings >= this value are "satisfied".
+
+    let page = 1, pageSize = 100;
+    let MASTER = [];
+    let HEADERS = [];
+    let resizeTimeout;
+    let listenersAttached = false;
+
+    google.charts.load("current", { "packages": ["corechart"] });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        google.charts.setOnLoadCallback(init);
+        updateHeaderDate();
+        
+        const themeToggleBtn = document.getElementById("themeToggleBtn");
+        const themeIcon = themeToggleBtn.querySelector("i");
+        
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.body.classList.add("dark-mode");
+                themeIcon.classList.remove("fa-sun");
+                themeIcon.classList.add("fa-moon");
+            } else {
+                document.body.classList.remove("dark-mode");
+                themeIcon.classList.remove("fa-moon");
+                themeIcon.classList.add("fa-sun");
+            }
+            if (MASTER.length > 0) {
+                 const rows = filteredRows();
+                 drawTrend(rows);
+                 drawDist(rows);
+            }
+        };
+
+        const preferredTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(preferredTheme);
+
+        themeToggleBtn.addEventListener("click", () => {
+            const newTheme = document.body.classList.contains("dark-mode") ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+    });
+    
+    function setupEventListeners() {
+        if (listenersAttached) return;
+
+        document.getElementById("timeFilter").addEventListener("change", () => {
+            handleTimeFilterChange();
+            handleFilterChange();
+        });
+        document.getElementById("searchInput").addEventListener("input", handleFilterChange);
+        document.getElementById("dateFrom").addEventListener("change", () => {
+            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange(); handleFilterChange();
+        });
+        document.getElementById("dateTo").addEventListener("change", () => {
+            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange(); handleFilterChange();
+        });
+
+        document.getElementById("prevBtn").addEventListener("click", () => {
+            if (page > 1) { page--; renderTable(filteredRows()); } });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+            const rows = filteredRows();
+            if ((page * pageSize) < rows.length) { page++; renderTable(rows); }
+        });
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => { if (MASTER.length > 0) renderAll(); }, 500);
+        });
+
+        listenersAttached = true;
+    }
+
+
+    function updateHeaderDate() {
+        const dateEl = document.getElementById("header-date");
+        const now = new Date();
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        if(dateEl) dateEl.textContent = now.toLocaleDateString('en-US', options);
+    }
+
+    function handleFilterChange() {
+        page = 1;
+        const loader = document.getElementById("loader");
+        loader.classList.add('visible');
+        setTimeout(() => {
+            renderAll();
+            loader.classList.remove('visible');
+        }, 50);
+    }
+
+    function handleTimeFilterChange() {
+        const selection = document.getElementById("timeFilter").value;
+        const dateFromInput = document.getElementById("dateFrom");
+        const dateToInput = document.getElementById("dateTo");
+        const dateFromContainer = dateFromInput.parentElement;
+        const dateToContainer = dateToInput.parentElement;
+        
+        const now = new Date();
+        let startDate, endDate;
+        const formatDate = (date) => date ? date.toISOString().split('T')[0] : "";
+
+        if (selection === 'all') {
+            dateFromContainer.style.display = 'none';
+            dateToContainer.style.display = 'none';
+            startDate = null; endDate = null;
+        } else {
+            dateFromContainer.style.display = ''; dateToContainer.style.display = '';
+            switch (selection) {
+                case "this-week": {
+                    const day = now.getDay() || 7;
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() - day + 1);
+                    endDate = new Date();
+                    break;
+                }
+                case "last-week": {
+                    const day = now.getDay() || 7;
+                    endDate = new Date(now);
+                    endDate.setDate(now.getDate() - day);
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 6);
+                    break;
+                }
+                case "this-month": {
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date();
+                    break;
+                }
+                case "last-month": {
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                    break;
+                }
+            }
+        }
+
+        if (selection !== 'custom') {
+            dateFromInput.value = formatDate(startDate);
+            dateToInput.value = formatDate(endDate);
+            dateFromInput.disabled = true;
+            dateToInput.disabled = true;
+        } else {
+            dateFromInput.disabled = false;
+            dateToInput.disabled = false;
+        }
+    }
+
+    async function init() {
+        const errorContainer = document.getElementById("errorContainer");
+        const skeletonLoader = document.getElementById("skeleton-loader");
+        const dashboardContent = document.getElementById("dashboard-content");
+        errorContainer.innerHTML = ''; 
+
+        const processAndDisplay = (data) => {
+            HEADERS = cleanHeaders(data.data[0]);
+            MASTER = data.data.slice(1).map(r => {
+                const rowObj = {};
+                HEADERS.forEach((h, i) => rowObj[h] = r[i]);
+                rowObj._epoch = toEpoch(rowObj[HEADERS[TIMESTAMP_COL]]);
+                return rowObj;
+            });
+            
+            skeletonLoader.classList.add('hidden');
+            dashboardContent.classList.remove('hidden');
+            
+            setupEventListeners();
+            handleTimeFilterChange();
+            renderAll();
+        };
+
+        const cachedData = localStorage.getItem('csatDashboardData');
+        const cacheTimestamp = localStorage.getItem('csatDashboardCacheTimestamp');
+        const now = Date.now();
+        const isCacheStale = !cacheTimestamp || (now - parseInt(cacheTimestamp)) > CACHE_DURATION_MINUTES * 60 * 1000;
+
+        const fetchFreshData = async (isUpdate = false) => {
+            try {
+                if (!API_URL || API_URL === "YOUR_APPS_SCRIPT_URL_GOES_HERE") {
+                    throw new Error("API_URL is not configured.");
+                }
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    if (response.type === 'opaque' || response.status === 0) {
+                        throw new Error(`The request was blocked due to CORS policy. Please check your Google Apps Script deployment settings.`);
+                    }
+                    throw new Error(`API returned status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.status === 'error') throw new Error(`Apps Script failed: ${data.message}`);
+                localStorage.setItem('csatDashboardData', JSON.stringify(data));
+                localStorage.setItem('csatDashboardCacheTimestamp', Date.now());
+                return data;
+            } catch (e) {
+                console.error("Data fetch failed:", e);
+                if (!isUpdate) {
+                     let userFriendlyError = `<div class="error-banner"><strong>Fatal Error:</strong> ${e.message}`;
+                    if (e.message.includes('CORS') || e.message.includes('Failed to fetch')) {
+                        userFriendlyError = `<div class="error-banner"><strong>Data Connection Failed</strong>
+                                            <p>The dashboard could not connect to the Google Sheets data source. This is almost always due to the Google Apps Script deployment settings.</p>
+                                            <strong>How to Fix:</strong>
+                                            <ol>
+                                                <li>Open your Google Apps Script project associated with this dashboard.</li>
+                                                <li>At the top right, click the blue <strong>Deploy</strong> button, then select <strong>New deployment</strong>.</li>
+                                                <li>In the configuration window, ensure that <strong>"Who has access"</strong> is set to <strong>"Anyone"</strong>. This is a critical step.</li>
+                                                <li>Click <strong>Deploy</strong> and use the new Web app URL if it has changed.</li>
+                                            </ol>`;
+                    }
+                    userFriendlyError += `</div>`;
+                    errorContainer.innerHTML = userFriendlyError;
+                    skeletonLoader.classList.add('hidden');
+                }
+                return null;
+            }
+        };
+
+        if (cachedData && !isCacheStale) {
+            processAndDisplay(JSON.parse(cachedData));
+            const freshData = await fetchFreshData(true);
+            if (freshData) {
+                processAndDisplay(freshData);
+                showToast();
+            }
+        } else {
+            const freshData = await fetchFreshData(false);
+            if (freshData) {
+                processAndDisplay(freshData);
+            }
+        }
+    }
+    
+    function filteredRows(){
+        const fromVal = document.getElementById("dateFrom").value;
+        const toVal = document.getElementById("dateTo").value;
+        const dfEpoch = fromVal ? new Date(fromVal + 'T00:00:00.000Z').getTime() : null;
+        const dtEpoch = toVal ? new Date(toVal + 'T23:59:59.999Z').getTime() : null;
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+
+        return MASTER.filter(r => {
+            const ts = r._epoch;
+            if (dfEpoch && (ts == null || ts < dfEpoch)) return false;
+            if (dtEpoch && (ts == null || ts > dtEpoch)) return false;
+            
+            if (searchTerm) {
+                return Object.values(r).some(val => 
+                    String(val).toLowerCase().includes(searchTerm)
+                );
+            }
+            return true;
+        }).sort((a,b) => (b._epoch || 0) - (a._epoch || 0));
+    }
+
+    function renderAll(){
+        const rows = filteredRows();
+        renderKPIs(rows);
+        drawTrend(rows);
+        drawDist(rows);
+        renderTable(rows);
+    }
+
+    function renderKPIs(rows){
+        const ratingHeader = HEADERS[RATING_COL];
+        if (!ratingHeader) {
+            console.error("Rating column header could not be determined. Check RATING_COL configuration.");
+            return;
+        }
+        const ratings = numericCol(rows, ratingHeader);
+        const totalResponses = ratings.length;
+        
+        const avg = ratings.length ? ratings.reduce((a, b) => a + b, 0) / totalResponses : null;
+        const RATING_MAX_VAL = Math.max(...ratings.length > 0 ? ratings : [5]);
+        animateValue("avg-csat", avg);
+        setText("csat-scale", ratings.length > 0 ? `on a 1-${RATING_MAX_VAL} scale` : ` `);
+
+        animateValue("total-responses", totalResponses);
+
+        const satisfiedCount = ratings.filter(r => r >= SATISFIED_THRESHOLD).length;
+        const satisfactionRate = totalResponses > 0 ? (satisfiedCount / totalResponses) * 100 : null;
+        animatePercentage("satisfaction-rate", satisfactionRate);
+        setText("satisfied-count", totalResponses > 0 ? `${satisfiedCount} of ${totalResponses} satisfied` : ` `);
+    }
+    
+    function getChartOptions(extraOptions = {}) {
+        const isDark = document.body.classList.contains('dark-mode');
+        const baseOptions = {
+            backgroundColor: 'transparent',
+            chartArea:{left:48, top:48, right:16, bottom:40, width:'100%', height:'100%'},
+            legend: { position: "top", textStyle: { color: isDark ? '#EEE' : '#333' } },
+            hAxis: { textStyle: { color: isDark ? '#999' : '#555' }, gridlines: { color: 'transparent' } },
+            vAxis: { textStyle: { color: isDark ? '#999' : '#555' }, gridlines: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' }, viewWindow: { min: 0 } },
+            animation: { startup: true, duration: 1000, easing: 'out' },
+        };
+        return {...baseOptions, ...extraOptions};
+    }
+
+    function drawTrend(rows){
+        const ratingHeader = HEADERS[RATING_COL];
+        const sourceHeader = HEADERS[SOURCE_COL];
+        if (!ratingHeader || !sourceHeader) return;
+        
+        const sources = [...new Set(rows.map(r => r[sourceHeader] || "Unknown"))].sort();
+        const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#AB47BC', '#00ACC1'];
+
+        const byDay = new Map();
+        rows.forEach(r=>{
+            const ts = r._epoch;
+            if (ts==null) return;
+            const d = new Date(ts);
+            const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+            if (!byDay.has(key)) byDay.set(key,{});
+            
+            const source = r[sourceHeader] || "Unknown";
+            if (!byDay.get(key)[source]) byDay.get(key)[source] = {sum:0, count:0};
+
+            const entry = byDay.get(key)[source];
+            const rating = num(r[ratingHeader]);
+            if (!isNaN(rating)) {
+                entry.sum += rating;
+                entry.count++;
+            }
+        });
+        
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const arr = [...byDay.entries()].sort((a,b)=> new Date(a[0]) - new Date(b[0]))
+            .map(([k,v]) => {
+                const [y, m, d] = k.split('-').map(Number);
+                const formattedDate = `${monthNames[m - 1]} ${d}`;
+                const row = [formattedDate];
+                sources.forEach(source => {
+                    const data = v[source];
+                    row.push(data && data.count > 0 ? data.sum / data.count : null);
+                });
+                return row;
+            });
+
+        const dt = new google.visualization.DataTable();
+        dt.addColumn("string", "Date");
+        sources.forEach(source => dt.addColumn("number", source));
+        dt.addRows(arr);
+        
+        const opts = getChartOptions({ lineWidth:3, pointSize:4, colors: colors.slice(0, sources.length) });
+        new google.visualization.LineChart(document.getElementById("trendChart")).draw(dt, opts);
+    }
+
+    function drawDist(rows){
+        const ratingHeader = HEADERS[RATING_COL];
+        const sourceHeader = HEADERS[SOURCE_COL];
+        if (!ratingHeader || !sourceHeader) return;
+
+        const sources = [...new Set(rows.map(r => r[sourceHeader] || "Unknown"))].sort();
+        const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#AB47BC', '#00ACC1'];
+        
+        const counts = new Map();
+        rows.forEach(r=>{
+            const v = num(r[ratingHeader]);
+            const source = r[sourceHeader] || "Unknown";
+            if (!isNaN(v)) {
+                const rating = Math.round(v);
+                if (!counts.has(rating)) counts.set(rating, {});
+                counts.get(rating)[source] = (counts.get(rating)[source] || 0) + 1;
+            }
+        });
+
+        const RATING_MAX_VAL = Math.max(...numericCol(rows, ratingHeader), 5);
+        const arr = [ ["Rating", ...sources] ];
+        for (let i = 1; i <= RATING_MAX_VAL; i++) {
+            const row = [String(i)];
+            sources.forEach(source => {
+                row.push(counts.get(i)?.[source] || 0);
+            });
+            arr.push(row);
+        }
+        
+        const dt = google.visualization.arrayToDataTable(arr);
+        const opts = getChartOptions({
+            colors: colors.slice(0, sources.length),
+            hAxis: { title:"Rating" },
+            vAxis: { title:"Count" },
+        });
+        new google.visualization.ColumnChart(document.getElementById("distChart")).draw(dt, opts);
+    }
+    
+    function renderTable(rows) {
+        const start = (page-1)*pageSize;
+        const slice = rows.slice(start, start+pageSize);
+        const thead = document.getElementById("tableHead"), tbody = document.getElementById("tableBody"), noResults = document.getElementById("noResults");
+        thead.innerHTML = ""; tbody.innerHTML = "";
+
+        if (rows.length === 0) {
+            noResults.style.display = 'block';
+            thead.style.display = 'none';
+        } else {
+            noResults.style.display = '';
+            const trH = document.createElement("tr");
+            HEADERS.forEach(h => { const th=document.createElement("th"); th.textContent=h; trH.appendChild(th); });
+            thead.appendChild(trH);
+            slice.forEach(r=>{
+                const tr = document.createElement("tr");
+                const rating = num(r[HEADERS[RATING_COL]]);
+                if (!isNaN(rating) && rating < (SATISFIED_THRESHOLD-1)) { // Stricter highlight for poor scores
+                    tr.classList.add("row-flagged");
+                }
+                HEADERS.forEach(h => { 
+                    const td=document.createElement("td"); 
+                    td.textContent = cellToText(r[h]);
+                    tr.appendChild(td); 
+                });
+                tbody.appendChild(tr);
+            });
+        }
+        const total = rows.length;
+        const end = Math.min(start + pageSize, total);
+        document.getElementById("rowCount").textContent = total > 0 ? `${start + 1} - ${end} of ${total}` : "0 of 0";
+        document.getElementById("pageInfo").textContent = `Page ${page} of ${Math.max(1, Math.ceil(rows.length/pageSize))}`;
+    }
+    
+    function numericCol(rows, colName) {
+        if (!HEADERS.includes(colName)) return [];
+        return rows.map(r => num(r[colName])).filter(v => !isNaN(v));
+    }
+    function cleanHeaders(arr) { return arr.map(h => String(h).replace(/^\uFEFF/, "").trim()); }
+    function num(v){ if (v==null||v==="") return NaN; const n=Number(String(v).replace(/[^\d.\-]/g,"")); return isNaN(n)?NaN:n; }
+    function toEpoch(cell){
+        if (cell==null||cell==="") return null;
+        const n = Number(cell);
+        if (!isNaN(n) && String(cell).trim()!=="" && !/[a-zA-Z]/.test(String(cell))) {
+            return Date.UTC(1899,11,30) + Math.round(n*86400000);
+        }
+        const p = Date.parse(cell); if (!isNaN(p)) return p;
+        const m = String(cell).trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (m){ const d=+m[1], mo=+m[2]-1, y=(+m[3]<100?2000+ +m[3]:+m[3]); const hh=+(m[4]||0), mm=+(m[5]||0), ss=+(m[6]||0); return Date.UTC(y,mo,d,hh,mm,ss); }
+        return null;
+    }
+    function fmt(n){ return (n==null||isNaN(n)) ? "—" : (Math.round(n*100)/100).toFixed(2); }
+    function setText(id, t){ const el = document.getElementById(id); if (el) el.textContent = t; }
+    function cellToText(c){ return c==null ? "" : String(c); }
+
+    function showToast() {
+        const toast = document.getElementById("toast-notification");
+        if (toast) {
+            toast.classList.add("show");
+            setTimeout(() => { toast.classList.remove("show"); }, 4000);
+        }
+    }
+
+    function animatePercentage(id, end) {
+        const el = document.getElementById(id);
+        if (!el) { console.warn(`Element with ID "${id}" not found.`); return; }
+        if (end === null || isNaN(end)) { el.textContent = "—"; return; }
+        let start = parseFloat(el.textContent) || 0;
+        const duration = 800, startTime = performance.now();
+        function step(currentTime) {
+            const elapsed = currentTime - startTime;
+            if (elapsed > duration) {
+                el.textContent = end.toFixed(1) + "%";
+            } else {
+                const progress = elapsed / duration;
+                const current = start + (end - start) * progress;
+                el.textContent = current.toFixed(1) + "%";
+                requestAnimationFrame(step);
+            }
+        }
+        requestAnimationFrame(step);
+    }
+
+    function animateValue(id, end) {
+        const el = document.getElementById(id);
+        if (!el) { console.warn(`Element with ID "${id}" not found.`); return; }
+        if (end === null || isNaN(end)) { el.textContent = "—"; return; }
+        let start = parseFloat(el.textContent) || 0;
+        const isInt = Number.isInteger(end), duration = 800, startTime = performance.now();
+        function step(currentTime) {
+            const elapsed = currentTime - startTime;
+            if (elapsed > duration) {
+                el.textContent = isInt ? end : fmt(end);
+            } else {
+                const progress = elapsed / duration;
+                const current = start + (end - start) * progress;
+                el.textContent = isInt ? Math.round(current) : fmt(end);
+                requestAnimationFrame(step);
+            }
+        }
+        requestAnimationFrame(step);
+    }
+  </script>
+</body>
+</html>
+
