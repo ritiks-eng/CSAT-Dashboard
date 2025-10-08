@@ -148,6 +148,10 @@
             <div class="card skeleton" style="height: 360px;"></div>
             <div class="card skeleton" style="height: 360px;"></div>
         </div>
+        <div class="grid grid-2" style="margin-top:16px;">
+            <div class="card skeleton" style="height: 250px;"></div>
+            <div class="card skeleton" style="height: 250px;"></div>
+        </div>
         <div class="card skeleton" style="margin-top:16px; height: 400px;"></div>
     </div>
 
@@ -193,6 +197,21 @@
         <div class="card"><div class="label muted" style="margin-bottom:6px;">Rating Distribution</div><div class="chart" id="distChart"></div></div>
       </div>
 
+       <div class="grid grid-2" style="margin-top:16px;">
+          <div class="card">
+            <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Source</h2>
+            <div id="source-table-container" class="table-wrap">
+                <!-- Table will be injected here -->
+            </div>
+          </div>
+          <div class="card">
+            <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Agent</h2>
+            <div id="agent-table-container" class="table-wrap">
+                <!-- Table will be injected here -->
+            </div>
+          </div>
+      </div>
+
       <div class="card" style="margin-top:16px;">
         <div style="display:flex; flex-wrap: wrap; justify-content:space-between; align-items:center; gap: 12px;">
           <div class="label muted">Feedbacks</div>
@@ -231,6 +250,7 @@
     const TIMESTAMP_COL = 4; // Column E
     const RATING_COL = 3;    // Column D
     const SOURCE_COL = 5;    // Column F
+    const AGENT_COL = 1;     // Column B
     const RATING_MAX = 5; // Assuming a 1-5 scale. Change if needed.
     const SATISFIED_THRESHOLD = 4; // Ratings >= this value are "satisfied".
 
@@ -491,6 +511,8 @@
         drawTrend(rows);
         drawDist(rows);
         renderTable(rows);
+        renderSourceTable(rows);
+        renderAgentTable(rows);
     }
 
     function renderKPIs(rows){
@@ -615,6 +637,136 @@
         new google.visualization.ColumnChart(document.getElementById("distChart")).draw(dt, opts);
     }
     
+    function renderSourceTable(rows) {
+        const container = document.getElementById("source-table-container");
+        if (!container) return;
+
+        const sourceHeader = HEADERS[SOURCE_COL]; 
+        const ratingHeader = HEADERS[RATING_COL];
+        if (!sourceHeader || !ratingHeader) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 20px;">Source or Rating column not found.</p>';
+            return;
+        }
+
+        const groupedBySource = rows.reduce((acc, row) => {
+            const source = row[sourceHeader] || "Unknown";
+            if (!acc[source]) {
+                acc[source] = { ratings: [], count: 0 };
+            }
+            const rating = num(row[ratingHeader]);
+            if (!isNaN(rating)) {
+                acc[source].ratings.push(rating);
+                acc[source].count++;
+            }
+            return acc;
+        }, {});
+
+        const sourceData = Object.keys(groupedBySource).map(source => {
+            const data = groupedBySource[source];
+            const avg = data.ratings.length > 0 ? data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length : 0;
+            return {
+                source: source,
+                average: avg,
+                count: data.count
+            };
+        }).sort((a, b) => b.count - a.count);
+
+        if (sourceData.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
+            return;
+        }
+
+        let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>CSAT Source</th>
+                        <th>Responses</th>
+                        <th>Average CSAT</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        sourceData.forEach(item => {
+            tableHtml += `
+                <tr>
+                    <td>${cellToText(item.source)}</td>
+                    <td>${item.count}</td>
+                    <td>${fmt(item.average)}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+    }
+
+    function renderAgentTable(rows) {
+        const container = document.getElementById("agent-table-container");
+        if (!container) return;
+
+        const agentHeader = HEADERS[AGENT_COL]; 
+        const ratingHeader = HEADERS[RATING_COL];
+        if (!agentHeader || !ratingHeader) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 20px;">Agent or Rating column not found.</p>';
+            return;
+        }
+
+        const groupedByAgent = rows.reduce((acc, row) => {
+            const agent = row[agentHeader] || "Unassigned";
+            if (!acc[agent]) {
+                acc[agent] = { ratings: [], count: 0 };
+            }
+            const rating = num(row[ratingHeader]);
+            if (!isNaN(rating)) {
+                acc[agent].ratings.push(rating);
+                acc[agent].count++;
+            }
+            return acc;
+        }, {});
+
+        const agentData = Object.keys(groupedByAgent).map(agent => {
+            const data = groupedByAgent[agent];
+            const avg = data.ratings.length > 0 ? data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length : 0;
+            return {
+                agent: agent,
+                average: avg,
+                count: data.count
+            };
+        }).sort((a, b) => b.count - a.count);
+
+        if (agentData.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
+            return;
+        }
+
+        let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent Name</th>
+                        <th>Responses</th>
+                        <th>Average CSAT</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        agentData.forEach(item => {
+            tableHtml += `
+                <tr>
+                    <td>${cellToText(item.agent)}</td>
+                    <td>${item.count}</td>
+                    <td>${fmt(item.average)}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+    }
+
     function renderTable(rows) {
         const start = (page-1)*pageSize;
         const slice = rows.slice(start, start+pageSize);
