@@ -76,8 +76,30 @@
     .kpi{display:grid;gap:4px; text-align: center;}.kpi .label{color:var(--muted);font-size:12px;font-weight:500;}.kpi .value{font-size:40px;font-weight:700;letter-spacing:-.02em;transition: color 0.3s ease;}.kpi .sub{color:var(--muted);font-size:12px}
     .chart{height:320px}.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--ring)} table{border-collapse:collapse;width:100%;background:var(--card-bg);transition: background-color 0.3s ease;}
     .table-wrap-scrolling { max-height: 220px; }
-    th,td{padding:10px 12px;border-bottom:1px solid var(--ring);font-size:13px;transition: border-color 0.3s ease, background-color 0.3s ease;} th{text-align:left;color:var(--muted);font-weight:600;background:rgba(0,0,0,0.02);position:sticky;top:0;font-size:12px;letter-spacing:.01em;text-transform:uppercase;}
-    body.dark-mode th { background: rgba(255,255,255,0.05); }
+    th,td{padding:10px 12px;border-bottom:1px solid var(--ring);font-size:13px;transition: border-color 0.3s ease, background-color 0.3s ease;} 
+    th{
+        text-align:left;
+        color:var(--muted);
+        font-weight:600;
+        background:var(--card-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position:sticky;
+        top:0;
+        font-size:12px;
+        letter-spacing:.01em;
+        text-transform:uppercase;
+        z-index: 1;
+    }
+    tfoot { position: sticky; bottom: 0; z-index: 1;}
+    tfoot tr.summary-row td {
+        border-top: 2px solid var(--ring);
+        font-weight: 600;
+        color: var(--text);
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+    }
+    body.dark-mode th { background: var(--card-bg); }
     tr.row-flagged td { background: rgba(255, 69, 58, 0.05); }
     body.dark-mode tr.row-flagged td { background: rgba(255, 69, 58, 0.1); }
     .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef5ff;color:#0b5bd3;border:1px solid #d8e7ff}
@@ -149,7 +171,8 @@
             <div class="card skeleton" style="height: 360px;"></div>
             <div class="card skeleton" style="height: 360px;"></div>
         </div>
-        <div class="grid grid-2" style="margin-top:16px;">
+        <div class="grid grid-3" style="margin-top:16px;">
+            <div class="card skeleton" style="height: 250px;"></div>
             <div class="card skeleton" style="height: 250px;"></div>
             <div class="card skeleton" style="height: 250px;"></div>
         </div>
@@ -194,20 +217,26 @@
       </div>
 
       <div class="grid grid-2" style="margin-top:16px;">
-        <div class="card"><div class="label muted" style="margin-bottom:6px;">CSAT Score Trend (Daily Avg)</div><div class="chart" id="trendChart"></div></div>
+        <div class="card"><div class="label muted" style="margin-bottom:6px;">CSAT Score Trend</div><div class="chart" id="trendChart"></div></div>
         <div class="card"><div class="label muted" style="margin-bottom:6px;">Rating Distribution</div><div class="chart" id="distChart"></div></div>
       </div>
 
-      <div class="grid grid-2" style="margin-top:16px;">
+      <div class="grid grid-3" style="margin-top:16px;">
           <div class="card">
             <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Source</h2>
-            <div id="source-table-container" class="table-wrap">
+            <div id="source-table-container" class="table-wrap table-wrap-scrolling">
                 <!-- Table will be injected here -->
             </div>
           </div>
           <div class="card">
             <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Agent</h2>
             <div id="agent-table-container" class="table-wrap table-wrap-scrolling">
+                <!-- Table will be injected here -->
+            </div>
+          </div>
+          <div class="card">
+            <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">DSAT by Source</h2>
+            <div id="dsat-table-container" class="table-wrap table-wrap-scrolling">
                 <!-- Table will be injected here -->
             </div>
           </div>
@@ -252,8 +281,8 @@
     const RATING_COL = 3;    // Column D
     const SOURCE_COL = 5;    // Column F
     const AGENT_COL = 1;     // Column B
-    const RATING_MAX = 5; // Assuming a 1-5 scale. Change if needed.
     const SATISFIED_THRESHOLD = 4; // Ratings >= this value are "satisfied".
+    const DSAT_THRESHOLD = 4; // Ratings < this value are "dissatisfied".
 
     let page = 1, pageSize = 100;
     let MASTER = [];
@@ -488,8 +517,21 @@
     function filteredRows(){
         const fromVal = document.getElementById("dateFrom").value;
         const toVal = document.getElementById("dateTo").value;
-        const dfEpoch = fromVal ? new Date(fromVal + 'T00:00:00.000Z').getTime() : null;
-        const dtEpoch = toVal ? new Date(toVal + 'T23:59:59.999Z').getTime() : null;
+        
+        let dfEpoch = null;
+        if (fromVal) {
+            const [year, month, day] = fromVal.split('-').map(Number);
+            dfEpoch = new Date(year, month - 1, day).getTime();
+        }
+
+        let dtEpoch = null;
+        if (toVal) {
+            const [year, month, day] = toVal.split('-').map(Number);
+            const toDate = new Date(year, month - 1, day);
+            toDate.setDate(toDate.getDate() + 1);
+            dtEpoch = toDate.getTime() - 1;
+        }
+
         const searchTerm = document.getElementById("searchInput").value.toLowerCase();
 
         return MASTER.filter(r => {
@@ -514,6 +556,7 @@
         renderTable(rows);
         renderSourceTable(rows);
         renderAgentTable(rows);
+        renderDsatTable(rows);
     }
 
     function renderKPIs(rows){
@@ -556,21 +599,28 @@
         const sourceHeader = HEADERS[SOURCE_COL];
         if (!ratingHeader || !sourceHeader) return;
         
+        const timeFilterValue = document.getElementById("timeFilter").value;
+        const isMonthWise = timeFilterValue === 'all';
+
         const sources = [...new Set(rows.map(r => r[sourceHeader] || "Unknown"))].sort();
         const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#AB47BC', '#00ACC1'];
 
-        const byDay = new Map();
+        const dataMap = new Map();
         rows.forEach(r=>{
             const ts = r._epoch;
             if (ts==null) return;
             const d = new Date(ts);
-            const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
-            if (!byDay.has(key)) byDay.set(key,{});
+            
+            const key = isMonthWise 
+                ? `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`
+                : `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+            
+            if (!dataMap.has(key)) dataMap.set(key,{});
             
             const source = r[sourceHeader] || "Unknown";
-            if (!byDay.get(key)[source]) byDay.get(key)[source] = {sum:0, count:0};
+            if (!dataMap.get(key)[source]) dataMap.get(key)[source] = {sum:0, count:0};
 
-            const entry = byDay.get(key)[source];
+            const entry = dataMap.get(key)[source];
             const rating = num(r[ratingHeader]);
             if (!isNaN(rating)) {
                 entry.sum += rating;
@@ -579,10 +629,17 @@
         });
         
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const arr = [...byDay.entries()].sort((a,b)=> new Date(a[0]) - new Date(b[0]))
+        const arr = [...dataMap.entries()].sort((a,b)=> new Date(a[0]) - new Date(b[0]))
             .map(([k,v]) => {
-                const [y, m, d] = k.split('-').map(Number);
-                const formattedDate = `${monthNames[m - 1]} ${d}`;
+                let formattedDate;
+                if (isMonthWise) {
+                    const [y, m] = k.split('-').map(Number);
+                    const yearShort = new Date(y, m - 1).getFullYear().toString().slice(-2);
+                    formattedDate = `${monthNames[m - 1]} '${yearShort}`;
+                } else {
+                    const [y, m, d] = k.split('-').map(Number);
+                    formattedDate = `${monthNames[m - 1]} ${d}`;
+                }
                 const row = [formattedDate];
                 sources.forEach(source => {
                     const data = v[source];
@@ -672,10 +729,8 @@
             };
         }).sort((a, b) => b.count - a.count);
 
-        if (sourceData.length === 0) {
-            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
-            return;
-        }
+        let totalResponses = 0;
+        let totalRatingsSum = 0;
 
         let tableHtml = `
             <table>
@@ -697,10 +752,25 @@
                     <td>${fmt(item.average)}</td>
                 </tr>
             `;
+            totalResponses += item.count;
+            totalRatingsSum += item.average * item.count;
         });
+        
+        const overallAverage = totalResponses > 0 ? totalRatingsSum / totalResponses : 0;
 
-        tableHtml += `</tbody></table>`;
-        container.innerHTML = tableHtml;
+        tableHtml += `</tbody><tfoot>
+            <tr class="summary-row">
+                <td><strong>Overall Average</strong></td>
+                <td><strong>${totalResponses}</strong></td>
+                <td><strong>${fmt(overallAverage)}</strong></td>
+            </tr>
+        </tfoot></table>`;
+
+        if (sourceData.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
+        } else {
+             container.innerHTML = tableHtml;
+        }
     }
 
     function renderAgentTable(rows) {
@@ -737,10 +807,8 @@
             };
         }).sort((a, b) => b.count - a.count);
 
-        if (agentData.length === 0) {
-            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
-            return;
-        }
+        let totalResponses = 0;
+        let totalRatingsSum = 0;
 
         let tableHtml = `
             <table>
@@ -762,10 +830,105 @@
                     <td>${fmt(item.average)}</td>
                 </tr>
             `;
+            totalResponses += item.count;
+            totalRatingsSum += item.average * item.count;
         });
 
-        tableHtml += `</tbody></table>`;
-        container.innerHTML = tableHtml;
+        const overallAgentAverage = totalResponses > 0 ? totalRatingsSum / totalResponses : 0;
+
+        tableHtml += `</tbody><tfoot>
+            <tr class="summary-row">
+                <td><strong>Total</strong></td>
+                <td><strong>${totalResponses}</strong></td>
+                <td><strong>${fmt(overallAgentAverage)}</strong></td>
+            </tr>
+        </tfoot></table>`;
+        
+        if (agentData.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
+        } else {
+            container.innerHTML = tableHtml;
+        }
+    }
+    
+    function renderDsatTable(rows) {
+        const container = document.getElementById("dsat-table-container");
+        if (!container) return;
+
+        const sourceHeader = HEADERS[SOURCE_COL]; 
+        const ratingHeader = HEADERS[RATING_COL];
+        if (!sourceHeader || !ratingHeader) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 20px;">Source or Rating column not found.</p>';
+            return;
+        }
+
+        const groupedBySource = rows.reduce((acc, row) => {
+            const source = row[sourceHeader] || "Unknown";
+            if (!acc[source]) {
+                acc[source] = { ratings: [] };
+            }
+            const rating = num(row[ratingHeader]);
+            if (!isNaN(rating)) {
+                acc[source].ratings.push(rating);
+            }
+            return acc;
+        }, {});
+
+        const sourceData = Object.keys(groupedBySource).map(source => {
+            const data = groupedBySource[source];
+            const totalCount = data.ratings.length;
+            const dsatCount = data.ratings.filter(r => r < DSAT_THRESHOLD).length;
+            const dsatRate = totalCount > 0 ? (dsatCount / totalCount) * 100 : 0;
+            return {
+                source: source,
+                totalCount: totalCount,
+                dsatCount: dsatCount,
+                dsatRate: dsatRate
+            };
+        }).sort((a, b) => b.dsatCount - a.dsatCount);
+
+        let totalDsats = 0;
+        let totalResponses = 0;
+
+        let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>CSAT Source</th>
+                        <th>DSAT Count</th>
+                        <th>DSAT Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        sourceData.forEach(item => {
+            tableHtml += `
+                <tr>
+                    <td>${cellToText(item.source)}</td>
+                    <td>${item.dsatCount}</td>
+                    <td>${item.dsatRate.toFixed(1)}%</td>
+                </tr>
+            `;
+            totalDsats += item.dsatCount;
+            totalResponses += item.totalCount;
+        });
+        
+        const overallDsatRate = totalResponses > 0 ? (totalDsats / totalResponses) * 100 : 0;
+
+        tableHtml += `</tbody><tfoot>
+            <tr class="summary-row">
+                <td><strong>Overall</strong></td>
+                <td><strong>${totalDsats}</strong></td>
+                <td><strong>${overallDsatRate.toFixed(1)}%</strong></td>
+            </tr>
+        </tfoot></table>`;
+
+        if (sourceData.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align:center; padding: 40px;">No data to display for the current filters.</p>';
+        } else {
+            container.innerHTML = tableHtml;
+        }
     }
 
     function renderTable(rows) {
