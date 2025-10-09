@@ -947,7 +947,7 @@
             slice.forEach(r=>{
                 const tr = document.createElement("tr");
                 const rating = num(r[HEADERS[RATING_COL]]);
-                if (!isNaN(rating) && rating < (SATISFIED_THRESHOLD-1)) { // Stricter highlight for poor scores
+                if (!isNaN(rating) && rating < DSAT_THRESHOLD) { 
                     tr.classList.add("row-flagged");
                 }
                 HEADERS.forEach(h => { 
