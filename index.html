@@ -195,6 +195,7 @@
           </div>
           <div class="control"><label>From</label><input type="date" id="dateFrom"></div>
           <div class="control"><label>To</label><input type="date" id="dateTo"></div>
+          <div class="control"><label>&nbsp;</label><button class="primary" id="applyBtn">Apply</button></div>
         </div>
       </div>
 
@@ -329,16 +330,14 @@
     function setupEventListeners() {
         if (listenersAttached) return;
 
-        document.getElementById("timeFilter").addEventListener("change", () => {
-            handleTimeFilterChange();
-            handleFilterChange();
-        });
+        document.getElementById("applyBtn").addEventListener("click", handleFilterChange);
+        document.getElementById("timeFilter").addEventListener("change", handleTimeFilterChange);
         document.getElementById("searchInput").addEventListener("input", handleFilterChange);
         document.getElementById("dateFrom").addEventListener("change", () => {
-            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange(); handleFilterChange();
+            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange();
         });
         document.getElementById("dateTo").addEventListener("change", () => {
-            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange(); handleFilterChange();
+            document.getElementById("timeFilter").value = 'custom'; handleTimeFilterChange();
         });
 
         document.getElementById("prevBtn").addEventListener("click", () => {
