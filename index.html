@@ -308,9 +308,7 @@
             <div class="card skeleton" style="height: 360px;"></div>
             <div class="card skeleton" style="height: 360px;"></div>
         </div>
-        <div class="grid grid-4" style="margin-top:16px;">
-            <div class="card skeleton" style="height: 250px;"></div>
-            <div class="card skeleton" style="height: 250px;"></div>
+        <div class="grid grid-2" style="margin-top:16px;">
             <div class="card skeleton" style="height: 250px;"></div>
             <div class="card skeleton" style="height: 250px;"></div>
         </div>
@@ -378,7 +376,7 @@
         <div class="card"><div class="label muted" style="margin-bottom:6px;">Rating Distribution</div><div class="chart" id="distChart"></div></div>
       </div>
 
-      <div class="grid grid-4" style="margin-top:16px;">
+      <div class="grid grid-2" style="margin-top:16px;">
           <div class="card">
             <h2 class="label muted" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">CSAT by Source</h2>
             <div id="source-table-container" class="table-wrap table-wrap-scrolling">
@@ -1084,7 +1082,8 @@
             return;
         }
         
-        // Note: 'rows' are already pre-filtered by the global agent filter
+        // This table is now filtered by the *global* agent filter
+        // So 'rows' already contains only the agents we want.
         const groupedByAgent = rows.reduce((acc, row) => {
             const agent = row[agentHeader] || "Unassigned";
             if (!acc[agent]) {
@@ -1233,7 +1232,7 @@
             container.innerHTML = tableHtml;
         }
     }
-
+    
     function renderTeamTable(rows) {
         const container = document.getElementById("team-table-container");
         if (!container) return;
